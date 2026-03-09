@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sobat Surga - Lucky Draw</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti for realistic fireworks -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        gold: {
+                            300: '#FDE047',
+                            400: '#FACC15',
+                            500: '#EAB308',
+                            600: '#CA8A04',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0f172a;
+            background-image: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 60%, #000000 100%);
+            background-attachment: fixed;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        /* Glassmorphism utilities */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .golden-text {
+            background: linear-gradient(to right, #FDE047, #F59E0B, #FDE047);
+            background-size: 200% auto;
+            color: transparent;
+            -webkit-background-clip: text;
+            background-clip: text;
+            animation: shine 3s linear infinite;
+        }
+
+        @keyframes shine {
+            to { background-position: 200% center; }
+        }
+
+        /* Participant Cards */
+        .photo-card {
+            position: relative;
+            border-radius: 1rem;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            aspect-ratio: 1 / 1;
+            border: 2px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .photo-card:hover {
+            transform: translateY(-8px) scale(1.03);
+            border-color: rgba(250, 204, 21, 0.5);
+            box-shadow: 0 20px 40px -10px rgba(250, 204, 21, 0.2);
+            z-index: 10;
+        }
+        
+        .photo-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .photo-card:hover img {
+            transform: scale(1.1);
+        }
+
+        .photo-card .name-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 24px 12px 12px;
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
+            color: white;
+            font-weight: 700;
+            text-align: center;
+            font-size: 1.1rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+        
+        .photo-card .remove-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(239, 68, 68, 0.9);
+            backdrop-filter: blur(4px);
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .photo-card:hover .remove-btn {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .photo-card .remove-btn:hover {
+            background: rgb(220, 38, 38);
+            transform: scale(1.1);
+        }
+
+        /* Custom Input & Upload Zone */
+        .upload-zone {
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .upload-zone:hover {
+            border-color: #FACC15;
+            background: rgba(250, 204, 21, 0.05);
+        }
+
+        .custom-input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .custom-input:focus {
+            border-color: #FACC15;
+            box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.1);
+            outline: none;
+        }
+
+        /* Spin Button */
+        .spin-button-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .spin-button-wrapper::before {
+            content: '';
+            position: absolute;
+            top: -5px; left: -5px; right: -5px; bottom: -5px;
+            background: linear-gradient(45deg, #FDE047, #F59E0B, #FDE047, #F59E0B);
+            z-index: -1;
+            filter: blur(20px);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            border-radius: 60px;
+            animation: shine 3s linear infinite;
+        }
+
+        .spin-button-wrapper:hover::before {
+            opacity: 0.7;
+        }
+
+        .spin-button {
+            background: linear-gradient(135deg, #FDE047 0%, #F59E0B 100%);
+            color: #451A03;
+            text-shadow: 0 1px 2px rgba(255,255,255,0.5);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2), 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .spin-button:hover:not(:disabled) {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2), 0 15px 30px rgba(245, 158, 11, 0.4);
+        }
+
+        .spin-button:active:not(:disabled) {
+            transform: translateY(2px);
+            box-shadow: inset 0 0 0 rgba(0,0,0,0.2), 0 5px 10px rgba(0,0,0,0.3);
+        }
+
+        /* Overlays */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        .overlay.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* Spotlight Animations */
+        .spotlight-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* Paksa selalu 3 kolom */
+            gap: 16px;
+            justify-items: center;
+            align-items: center;
+            max-width: 90vw;
+            max-height: 80vh;
+            perspective: 1000px;
+            margin: 0 auto;
+        }
+
+        .spotlight-item {
+            width: 90px;
+            height: 90px;
+            object-fit: cover;
+            border-radius: 16px;
+            opacity: 0.2;
+            transform: scale(0.9);
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 4px solid transparent;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        @media (min-width: 768px) {
+            .spotlight-grid {
+                gap: 24px; /* Jarak antar foto diperbesar di layar komputer */
+            }
+            .spotlight-item {
+                width: 160px; /* Ukuran foto diperbesar agar jelas */
+                height: 160px;
+                border-radius: 24px;
+            }
+        }
+
+        .spotlight-item.active {
+            opacity: 1;
+            transform: scale(1.15) translateZ(20px); /* Skala aktif diturunkan sedikit agar tidak tabrakan dengan foto lain karena ukurannya sudah besar */
+            border-color: #FACC15;
+            box-shadow: 0 0 40px rgba(250, 204, 21, 0.9), 0 0 80px rgba(250, 204, 21, 0.4);
+            z-index: 50;
+            filter: brightness(1.2);
+        }
+
+        .spotlight-item.dimmed {
+            opacity: 0.05;
+            transform: scale(0.85);
+            filter: grayscale(100%) blur(2px);
+        }
+
+        .countdown {
+            font-size: 150px;
+            font-weight: 800;
+            background: linear-gradient(to bottom, #fff, #a5b4fc);
+            -webkit-background-clip: text;
+            color: transparent;
+            animation: popIn 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Winner Reveal */
+        .winner-content {
+            text-align: center;
+            transform: scale(0.9);
+            opacity: 0;
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .overlay.show .winner-content {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .winner-photo {
+            width: 250px;
+            height: 250px;
+            margin: 0 auto;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 8px solid #FACC15;
+            box-shadow: 0 0 60px rgba(250, 204, 21, 0.6), inset 0 0 20px rgba(0,0,0,0.5);
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @media (min-width: 768px) {
+            .winner-photo { width: 350px; height: 350px; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .toast-notification {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            z-index: 9999;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateX(120%);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .toast-notification.show {
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body class="h-full antialiased selection:bg-gold-500 selection:text-black">
+
+    <div id="app" class="min-h-full w-full flex flex-col items-center py-10 px-4 sm:px-6 lg:px-8">
+        
+        <!-- Header Section -->
+        <div class="text-center mb-10 w-full max-w-4xl animate-[popIn_0.8s_ease-out]">
+            <div class="inline-block mb-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm text-sm font-medium text-gold-400 tracking-wider uppercase">
+                Premium Lucky Draw
+            </div>
+            <h1 id="app-title" class="text-5xl md:text-7xl font-extrabold text-white mb-4 tracking-tight">
+                🎰 SOBAT <span class="golden-text">SURGA</span>
+            </h1>
+            <p class="text-slate-300 text-lg md:text-xl font-light">
+                Tambahkan peserta dan putar roda nasib untuk menemukan pemenangnya!
+            </p>
+        </div>
+
+        <div class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Sidebar: Add Participant Form -->
+            <div class="lg:col-span-4 h-fit">
+                <div class="glass-panel rounded-3xl p-6 md:p-8 sticky top-8">
+                    <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                        <span>✨</span> Tambah Peserta
+                    </h2>
+                    
+                    <div class="space-y-5">
+                        <div>
+                            <label for="participant-name" class="block text-sm font-medium text-slate-300 mb-2">Nama Lengkap</label>
+                            <input type="text" id="participant-name" placeholder="Masukkan nama peserta..." 
+                                   class="custom-input w-full px-4 py-3.5 rounded-xl text-base placeholder-slate-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Foto Peserta</label>
+                            <div class="upload-zone rounded-xl p-6 text-center cursor-pointer group" onclick="document.getElementById('photo-input').click()">
+                                <input type="file" id="photo-input" accept="image/*" class="hidden">
+                                
+                                <div id="upload-placeholder" class="space-y-2">
+                                    <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto group-hover:bg-gold-400/20 transition-colors">
+                                        <svg class="w-6 h-6 text-slate-400 group-hover:text-gold-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                                        </svg>
+                                    </div>
+                                    <p class="text-sm font-medium text-slate-300">Klik untuk upload foto</p>
+                                    <p class="text-xs text-slate-500">PNG, JPG up to 5MB</p>
+                                </div>
+
+                                <div id="preview-container" class="hidden">
+                                    <img id="photo-preview" src="" alt="Preview" class="w-full h-32 object-cover rounded-lg border border-white/10 shadow-lg">
+                                    <p class="text-xs text-gold-400 mt-3 font-medium">Klik lagi untuk mengganti foto</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="add-participant-btn" class="w-full bg-white/10 hover:bg-white/20 text-white border border-white/20 px-6 py-4 rounded-xl font-bold text-lg transition-all shadow-lg mt-2 flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            Tambahkan
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Area: Grid & Spin Button -->
+            <div class="lg:col-span-8 flex flex-col">
+                
+                <!-- Spin Button Area -->
+                <div id="spin-section" class="mb-10 text-center hidden">
+                    <div class="glass-panel p-8 rounded-3xl flex flex-col items-center justify-center border border-gold-500/30 bg-gold-500/5">
+                        <h3 class="text-gold-400 font-semibold mb-6 tracking-widest uppercase text-sm">Siap mencari pemenang?</h3>
+                        <div class="spin-button-wrapper">
+                            <button id="spin-button" class="spin-button text-xl md:text-3xl font-black px-12 py-5 md:py-6 rounded-full tracking-wider uppercase flex items-center gap-4">
+                                🎲 Putar Sekarang!
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid Area -->
+                <div class="glass-panel rounded-3xl p-6 md:p-8 flex-grow">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                            👥 Daftar Peserta
+                        </h3>
+                        <span id="participant-count" class="bg-white/10 px-3 py-1 rounded-full text-sm font-medium text-gold-300">
+                            0 Orang
+                        </span>
+                    </div>
+                    
+                    <div id="empty-state" class="text-center py-20">
+                        <div class="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="text-4xl">🤷‍♂️</span>
+                        </div>
+                        <h4 class="text-lg font-medium text-slate-300 mb-2">Belum ada peserta</h4>
+                        <p class="text-slate-500 text-sm">Tambahkan nama dan foto di sebelah kiri untuk mulai.</p>
+                    </div>
+
+                    <div id="photo-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 md:gap-6 hidden">
+                        <!-- Cards injected by JS -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Spin Fullscreen Overlay -->
+    <div id="spinner-overlay" class="overlay flex-col">
+        <div id="spinner-content" class="text-center">
+            <!-- Countdown / Spinner goes here -->
+        </div>
+        <p id="spinner-caption" class="mt-10 text-xl font-bold text-gold-300 tracking-[0.2em] uppercase animate-pulse hidden">
+            Mengacak...
+        </p>
+    </div>
+
+    <!-- Winner Overlay -->
+    <div id="winner-overlay" class="overlay">
+        <button class="absolute top-6 right-6 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white text-2xl transition-colors z-50" onclick="closeWinner()">
+            ✕
+        </button>
+        
+        <div class="winner-content w-full max-w-2xl px-4">
+            <h2 class="text-3xl md:text-5xl font-black text-white mb-10 tracking-widest uppercase text-shadow-lg drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">
+                🎉 Pemenang 🎉
+            </h2>
+            
+            <img id="winner-photo" src="" alt="Winner" class="winner-photo mb-8">
+            
+            <div id="winner-name-display" class="text-5xl md:text-7xl font-black golden-text mb-12 drop-shadow-[0_5px_15px_rgba(0,0,0,0.8)]">
+                Nama Pemenang
+            </div>
+            
+            <button class="bg-white hover:bg-slate-100 text-slate-900 font-bold text-xl px-10 py-4 rounded-full shadow-xl transition-transform hover:scale-105" onclick="restartGame()">
+                🔄 Putar Lagi
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let participants = [];
+        let isSpinning = false;
+        let tempPhotoData = null;
+        let spinCounter = 0; 
+        
+        // Element References
+        const els = {
+            photoInput: document.getElementById('photo-input'),
+            addBtn: document.getElementById('add-participant-btn'),
+            spinBtn: document.getElementById('spin-button'),
+            nameInput: document.getElementById('participant-name'),
+            grid: document.getElementById('photo-grid'),
+            emptyState: document.getElementById('empty-state'),
+            spinSection: document.getElementById('spin-section'),
+            countBadge: document.getElementById('participant-count'),
+            uploadPlaceholder: document.getElementById('upload-placeholder'),
+            previewContainer: document.getElementById('preview-container'),
+            photoPreview: document.getElementById('photo-preview'),
+            spinnerOverlay: document.getElementById('spinner-overlay'),
+            spinnerContent: document.getElementById('spinner-content'),
+            spinnerCaption: document.getElementById('spinner-caption'),
+            winnerOverlay: document.getElementById('winner-overlay'),
+            winnerPhoto: document.getElementById('winner-photo'),
+            winnerName: document.getElementById('winner-name-display')
+        };
+
+        function setupEventListeners() {
+            els.photoInput.addEventListener('change', handlePhotoSelect);
+            els.addBtn.addEventListener('click', handleAddParticipant);
+            els.spinBtn.addEventListener('click', startSpin);
+            els.nameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleAddParticipant();
+            });
+        }
+        
+        function handlePhotoSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('❌ Ukuran foto maksimal 5MB');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                tempPhotoData = event.target.result;
+                els.photoPreview.src = tempPhotoData;
+                els.uploadPlaceholder.classList.add('hidden');
+                els.previewContainer.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function handleAddParticipant() {
+            const name = els.nameInput.value.trim();
+            
+            if (!name) {
+                showToast('⚠️ Nama peserta tidak boleh kosong!');
+                els.nameInput.focus();
+                return;
+            }
+            if (!tempPhotoData) {
+                showToast('📸 Silakan upload foto peserta!');
+                return;
+            }
+            
+            participants.push({
+                id: Date.now() + Math.random(),
+                name: name,
+                photo: tempPhotoData
+            });
+            
+            // Reset Form
+            els.nameInput.value = '';
+            tempPhotoData = null;
+            els.photoInput.value = '';
+            els.uploadPlaceholder.classList.remove('hidden');
+            els.previewContainer.classList.add('hidden');
+            
+            renderState();
+            showToast(`✅ ${name} berhasil ditambahkan!`);
+        }
+        
+        function removePhoto(id) {
+            const participant = participants.find(p => p.id === parseFloat(id));
+            participants = participants.filter(p => p.id !== parseFloat(id));
+            renderState();
+            if (participant) showToast(`🗑️ ${participant.name} dihapus.`);
+        }
+
+        function renderState() {
+            els.countBadge.textContent = `${participants.length} Orang`;
+
+            if (participants.length === 0) {
+                els.emptyState.classList.remove('hidden');
+                els.grid.classList.add('hidden');
+                els.spinSection.classList.add('hidden');
+                return;
+            }
+
+            els.emptyState.classList.add('hidden');
+            els.grid.classList.remove('hidden');
+            
+            if (participants.length >= 2) {
+                els.spinSection.classList.remove('hidden');
+            } else {
+                els.spinSection.classList.add('hidden');
+            }
+
+            els.grid.innerHTML = participants.map(p => `
+                <div class="photo-card group">
+                    <img src="${p.photo}" alt="${p.name}">
+                    <div class="name-overlay">${p.name}</div>
+                    <div class="remove-btn" onclick="removePhoto('${p.id}')" title="Hapus Peserta">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        async function startSpin() {
+            if (isSpinning || participants.length < 2) return;
+            
+            isSpinning = true;
+            els.spinnerOverlay.classList.add('show');
+            els.spinnerCaption.classList.add('hidden');
+            
+            // 3.. 2.. 1.. Countdown
+            for (let i = 3; i > 0; i--) {
+                els.spinnerContent.innerHTML = `<div class="countdown">${i}</div>`;
+                await sleep(800);
+            }
+            
+            els.spinnerCaption.classList.remove('hidden');
+            
+            // --- LOGIKA CERDAS: Easter Egg Anang (Tetap Dipertahankan) ---
+            let winner;
+            spinCounter++;
+            const anangParticipant = participants.find(p => p.name.toLowerCase() === 'anang');
+            
+            if (spinCounter >= 2 && anangParticipant) {
+                winner = anangParticipant; 
+            } else {
+                winner = participants[Math.floor(Math.random() * participants.length)];
+            }
+            if (winner.name.toLowerCase() === 'anang') spinCounter = 0;
+            // ----------------------------------------
+
+            // --- MODE: SPOTLIGHT DUEL TENSION (TIGA KANDIDAT) ---
+            els.spinnerCaption.textContent = "MENCARI PEMENANG...";
+            
+            // Render semua foto dalam bentuk grid
+            let gridHtml = '<div class="spotlight-grid">';
+            participants.forEach(p => {
+                gridHtml += `<img src="${p.photo}" id="spotlight-${p.id}" class="spotlight-item">`;
+            });
+            gridHtml += '</div>';
+            els.spinnerContent.innerHTML = gridHtml;
+
+            const items = participants.map(p => document.getElementById(`spotlight-${p.id}`));
+            
+            // Pilih DUA "Runner Up" secara acak untuk ketegangan di akhir
+            const others = participants.filter(p => p.id !== winner.id);
+            // Acak urutan others untuk mengambil 2 orang berbeda
+            const shuffledOthers = others.sort(() => 0.5 - Math.random());
+            const runnerUp1 = shuffledOthers.length > 0 ? shuffledOthers[0] : winner;
+            const runnerUp2 = shuffledOthers.length > 1 ? shuffledOthers[1] : runnerUp1;
+
+            // Kumpulkan 3 kandidat terakhir (Trio)
+            let finalCandidates = [winner];
+            if (runnerUp1.id !== winner.id) finalCandidates.push(runnerUp1);
+            if (runnerUp2.id !== winner.id && runnerUp2.id !== runnerUp1.id) finalCandidates.push(runnerUp2);
+            
+            // Acak urutan mereka agar urutan lampunya sulit ditebak
+            finalCandidates = finalCandidates.sort(() => 0.5 - Math.random());
+
+            let jumps = 0;
+            const totalJumps = 75; // Total lompatan cahaya ditambah agar lebih lama
+            
+            // Fungsi rekursif untuk mengatur kecepatan lompatan yang makin lambat
+            const jumpSpotlight = async () => {
+                // Hapus efek aktif dari semua item
+                items.forEach(el => el.classList.remove('active'));
+                
+                let nextTarget;
+
+                // FASE 1: Acak Cepat (Jump 0 - 30)
+                if (jumps < 30) {
+                    nextTarget = participants[Math.floor(Math.random() * participants.length)];
+                } 
+                // FASE 2: Acak Melambat (Jump 30 - 45)
+                else if (jumps < 45) {
+                    els.spinnerCaption.textContent = "HAMPIR KETEMU...";
+                    nextTarget = participants[Math.floor(Math.random() * participants.length)];
+                } 
+                // FASE 3: TIGA TERAKHIR! (Jump 45 - 74) Durasi diperlama
+                else if (jumps < totalJumps) {
+                    if (jumps === 45) els.spinnerCaption.textContent = "TIGA KANDIDAT TERAKHIR!!";
+                    
+                    // Bikin semua foto lain meredup (dimmed)
+                    items.forEach(el => {
+                        const id = el.id.replace('spotlight-', '');
+                        // Hanya biarkan 3 finalis yang terang
+                        if (!finalCandidates.find(c => String(c.id) === id)) {
+                            el.classList.add('dimmed');
+                        }
+                    });
+
+                    // Bergantian secara acak/berurutan di antara 3 finalis
+                    nextTarget = finalCandidates[jumps % finalCandidates.length];
+                } 
+                // FASE 4: BERHENTI DI PEMENANG
+                else {
+                    const winnerEl = document.getElementById(`spotlight-${winner.id}`);
+                    winnerEl.classList.add('active');
+                    
+                    // Matikan lampu kandidat lain
+                    finalCandidates.forEach(c => {
+                        if (c.id !== winner.id) {
+                            const el = document.getElementById(`spotlight-${c.id}`);
+                            if (el) el.classList.add('dimmed');
+                        }
+                    });
+                    
+                    els.spinnerCaption.textContent = "INI DIA!!";
+                    
+                    await sleep(2000); // Tahan sebentar untuk kepuasan visual
+                    
+                    participants = participants.filter(p => p.id !== winner.id);
+                    els.spinnerOverlay.classList.remove('show');
+                    showWinner(winner);
+                    isSpinning = false;
+                    return; 
+                }
+
+                // Nyalakan target cahaya emas
+                const targetEl = document.getElementById(`spotlight-${nextTarget.id}`);
+                if (targetEl) targetEl.classList.add('active');
+
+                jumps++;
+                
+                // Kalkulasi jeda (Makin lama makin lambat merayap)
+                let delay = 50; 
+                if (jumps > 30) delay = 50 + ((jumps - 30) * 15); 
+                // Fase akhir: dimulai dari 200ms melambat terus menerus hingga sangat lambat di detik terakhir
+                if (jumps > 45) delay = 200 + ((jumps - 45) * 40); 
+
+                await sleep(delay);
+                jumpSpotlight(); 
+            };
+
+            // Mulai lompatan
+            jumpSpotlight();
+        }
+        
+        function showWinner(winner) {
+            els.winnerPhoto.src = winner.photo;
+            els.winnerName.textContent = winner.name;
+            els.winnerOverlay.classList.add('show');
+            
+            // Trigger realistic confetti
+            fireConfetti();
+        }
+        
+        function closeWinner() {
+            els.winnerOverlay.classList.remove('show');
+        }
+        
+        function restartGame() {
+            closeWinner();
+            
+            if (participants.length === 0) {
+                showToast('🎉 Permainan Selesai! Tambahkan peserta baru.');
+            } else if (participants.length === 1) {
+                showToast('⚠️ Butuh minimal 2 peserta untuk memutar roda!');
+            }
+            
+            renderState();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        function fireConfetti() {
+            var duration = 3000;
+            var animationEnd = Date.now() + duration;
+            var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 2000 };
+
+            function randomInRange(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            var interval = setInterval(function() {
+                var timeLeft = animationEnd - Date.now();
+
+                if (timeLeft <= 0) {
+                    return clearInterval(interval);
+                }
+
+                var particleCount = 50 * (timeLeft / duration);
+                
+                // Fire from multiple origins
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+            }, 250);
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast-notification';
+            toast.innerHTML = message;
+            
+            document.body.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+        
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', setupEventListeners);
+    </script>
+</body>
+</html>
