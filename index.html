@@ -625,17 +625,28 @@
             
             els.spinnerCaption.classList.remove('hidden');
             
-            // --- LOGIKA CERDAS: Easter Egg Anang (Tetap Dipertahankan) ---
+            // --- LOGIKA CERDAS: Easter Egg Sulpiani / Piani ---
             let winner;
             spinCounter++;
-            const anangParticipant = participants.find(p => p.name.toLowerCase() === 'anang');
             
-            if (spinCounter >= 2 && anangParticipant) {
-                winner = anangParticipant; 
+            // Cari apakah ada Sulpiani atau Piani
+            const targetParticipant = participants.find(p => {
+                const nameLower = p.name.toLowerCase();
+                return nameLower === 'sulpiani' || nameLower === 'piani';
+            });
+            
+            // Jika putaran ke-2 (atau lebih) dan Sulpiani/Piani ada, dia pasti menang
+            if (spinCounter >= 2 && targetParticipant) {
+                winner = targetParticipant; 
             } else {
                 winner = participants[Math.floor(Math.random() * participants.length)];
             }
-            if (winner.name.toLowerCase() === 'anang') spinCounter = 0;
+            
+            // Reset counter jika Sulpiani/Piani sudah menang agar adil di putaran berikutnya
+            const winnerNameLower = winner.name.toLowerCase();
+            if (winnerNameLower === 'sulpiani' || winnerNameLower === 'piani') {
+                spinCounter = 0;
+            }
             // ----------------------------------------
 
             // --- MODE: SPOTLIGHT DUEL TENSION (TIGA KANDIDAT) ---
